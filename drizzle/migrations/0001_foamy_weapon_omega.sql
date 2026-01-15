@@ -1,0 +1,1 @@
+ALTER TABLE `monitor_configs` ADD `barkDeviceKey` varchar(255);

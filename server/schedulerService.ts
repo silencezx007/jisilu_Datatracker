@@ -2,6 +2,7 @@ import * as cron from 'node-cron';
 import { monitorLofOpportunities } from './jisiluService';
 import { insertLofRecords, insertPushHistory, getActiveMonitorConfig } from './db';
 import { notifyOwner } from './_core/notification';
+import { sendLofOpportunityNotification } from './barkService';
 
 /**
  * 定时任务调度器
@@ -143,6 +144,7 @@ class SchedulerService {
     }
     
     try {
+      // 发送 Manus 系统通知
       const success = await notifyOwner({
         title: `🚀 LOF 套利机会提醒`,
         content: content,
@@ -155,6 +157,32 @@ class SchedulerService {
       }
     } catch (error) {
       console.error('[Scheduler] Failed to send notification:', error);
+    }
+
+    // 发送 Bark 推送
+    try {
+      const config = await getActiveMonitorConfig();
+      if (config?.barkDeviceKey) {
+        const barkOpportunities = opportunities.map(opp => ({
+          fundName: opp.fundName,
+          discountRate: parseFloat(opp.discountRate.toString()),
+        }));
+        
+        const barkSuccess = await sendLofOpportunityNotification(
+          barkOpportunities,
+          config.barkDeviceKey
+        );
+        
+        if (barkSuccess) {
+          console.log('[Scheduler] Bark notification sent successfully');
+        } else {
+          console.warn('[Scheduler] Bark notification failed');
+        }
+      } else {
+        console.log('[Scheduler] Bark device key not configured, skipping Bark notification');
+      }
+    } catch (error) {
+      console.error('[Scheduler] Failed to send Bark notification:', error);
     }
   }
   

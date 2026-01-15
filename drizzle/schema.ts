@@ -70,6 +70,8 @@ export const monitorConfigs = mysqlTable("monitor_configs", {
   discountThreshold: decimal("discountThreshold", { precision: 10, scale: 2 }).notNull().default("2.00"),
   /** 定时任务 cron 表达式（多个用逗号分隔） */
   cronExpression: varchar("cronExpression", { length: 255 }).notNull().default("45 14 * * *"),
+  /** Bark Device Key（用于推送通知） */
+  barkDeviceKey: varchar("barkDeviceKey", { length: 255 }),
   /** 是否启用 */
   enabled: boolean("enabled").notNull().default(true),
   /** 创建时间 */

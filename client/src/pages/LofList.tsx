@@ -7,7 +7,8 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, TrendingUp, AlertCircle, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { RefreshCw, TrendingUp, AlertCircle, Filter, ArrowUpDown, ArrowUp, ArrowDown, Settings } from "lucide-react";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 type SortField = 'discountRate' | 'price' | 'fundNav';
@@ -118,8 +119,14 @@ export default function LofList() {
     toast.info("正在刷新数据...");
   };
 
+  const [, setLocation] = useLocation();
+
   const handleTrigger = () => {
     triggerMonitoring.mutate({ discountThreshold: preferences.threshold });
+  };
+
+  const handleGoToConfig = () => {
+    setLocation('/monitor-config');
   };
 
   const handleThresholdChange = (value: number[]) => {
@@ -174,6 +181,10 @@ export default function LofList() {
               <p className="text-sm text-muted-foreground mt-1">溢价套利监控系统</p>
             </div>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleGoToConfig}>
+                <Settings className="w-4 h-4 mr-2" />
+                配置
+              </Button>
               <Button variant="outline" size="sm" onClick={handleRefresh}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 刷新

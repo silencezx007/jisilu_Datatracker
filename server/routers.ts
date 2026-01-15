@@ -11,6 +11,7 @@ import {
   getLatestLofRecords
 } from "./db";
 import { schedulerService } from "./schedulerService";
+import { sendBarkNotification } from "./barkService";
 
 export const appRouter = router({
   system: systemRouter,
@@ -69,6 +70,7 @@ export const appRouter = router({
         name: z.string(),
         discountThreshold: z.number(),
         cronExpression: z.string(),
+        barkDeviceKey: z.string().optional(),
         enabled: z.boolean(),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -80,6 +82,7 @@ export const appRouter = router({
           name: input.name,
           discountThreshold: input.discountThreshold.toString(),
           cronExpression: input.cronExpression,
+          barkDeviceKey: input.barkDeviceKey,
           enabled: input.enabled,
         });
         
@@ -92,6 +95,29 @@ export const appRouter = router({
         };
       }),
     
+    // 测试 Bark 推送
+    testBark: publicProcedure
+      .input(z.object({
+        deviceKey: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const success = await sendBarkNotification({
+          deviceKey: input.deviceKey,
+          title: '测试推送',
+          body: 'LOF Hunter 推送测试成功！',
+          group: 'LOF套利',
+        });
+        
+        if (!success) {
+          throw new Error('推送失败，请检查 Device Key 是否正确');
+        }
+        
+        return {
+          success: true,
+          message: '测试推送已发送，请检查您的 Bark 应用',
+        };
+      }),
+    
     // 更新配置
     update: protectedProcedure
       .input(z.object({
@@ -99,6 +125,7 @@ export const appRouter = router({
         name: z.string().optional(),
         discountThreshold: z.number().optional(),
         cronExpression: z.string().optional(),
+        barkDeviceKey: z.string().optional(),
         enabled: z.boolean().optional(),
       }))
       .mutation(async ({ input, ctx }) => {

@@ -7,12 +7,14 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import LofList from "./pages/LofList";
 import ConfigManagement from "./pages/ConfigManagement";
 import PushHistory from "./pages/PushHistory";
+import MonitorConfig from "./pages/MonitorConfig";
 
 function Router() {
   return (
     <Switch>
       <Route path={"/"} component={LofList} />
       <Route path={"/config"} component={ConfigManagement} />
+      <Route path={"/monitor-config"} component={MonitorConfig} />
       <Route path={"/history"} component={PushHistory} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
