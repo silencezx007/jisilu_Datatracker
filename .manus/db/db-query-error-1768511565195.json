@@ -1,0 +1,8 @@
+{
+  "query": "SELECT fund_code, fund_name, discount_rate, purchase_status FROM lof_opportunities WHERE discount_rate > 0 ORDER BY discount_rate DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4QdSMYJJQSMZtBS.root --database 6z9k2KcqEe2BCibDAZefPz --execute SELECT fund_code, fund_name, discount_rate, purchase_status FROM lof_opportunities WHERE discount_rate > 0 ORDER BY discount_rate DESC;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table '6z9k2kcqee2bcibdazefpz.lof_opportunities' doesn't exist"
+  ]
+}

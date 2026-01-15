@@ -34,7 +34,7 @@ function loadPreferences(): UserPreferences {
   
   // 默认偏好
   return {
-    threshold: 2.0,
+    threshold: 0,
     sortField: 'discountRate',
     sortDirection: 'desc',
   };
@@ -119,7 +119,7 @@ export default function LofList() {
   };
 
   const handleTrigger = () => {
-    triggerMonitoring.mutate({ discountThreshold: 2.0 });
+    triggerMonitoring.mutate({ discountThreshold: preferences.threshold });
   };
 
   const handleThresholdChange = (value: number[]) => {

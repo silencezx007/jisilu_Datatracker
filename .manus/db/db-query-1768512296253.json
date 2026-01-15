@@ -1,0 +1,64 @@
+{
+  "query": "SELECT id, fundId, fundName, discountRate, applyStatus, monitorTime, createdAt FROM lof_records ORDER BY createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4QdSMYJJQSMZtBS.root --database 6z9k2KcqEe2BCibDAZefPz --execute SELECT id, fundId, fundName, discountRate, applyStatus, monitorTime, createdAt FROM lof_records ORDER BY createdAt DESC;",
+  "rows": [
+    {
+      "id": "30001",
+      "fundId": "161226",
+      "fundName": "国投白银LOF",
+      "discountRate": "19.47",
+      "applyStatus": "限100",
+      "monitorTime": "2026-01-15 21:10:48",
+      "createdAt": "2026-01-15 21:10:51"
+    },
+    {
+      "id": "30002",
+      "fundId": "161128",
+      "fundName": "标普信息科技LOF",
+      "discountRate": "4.43",
+      "applyStatus": "限10",
+      "monitorTime": "2026-01-15 21:10:48",
+      "createdAt": "2026-01-15 21:10:51"
+    },
+    {
+      "id": "30003",
+      "fundId": "161130",
+      "fundName": "纳斯达克100LOF",
+      "discountRate": "2.31",
+      "applyStatus": "限10",
+      "monitorTime": "2026-01-15 21:10:48",
+      "createdAt": "2026-01-15 21:10:51"
+    },
+    {
+      "id": "5",
+      "fundId": "161226",
+      "fundName": "国投白银LOF",
+      "discountRate": "19.47",
+      "applyStatus": "限100",
+      "monitorTime": "2026-01-15 16:18:45",
+      "createdAt": "2026-01-15 16:18:48"
+    },
+    {
+      "id": "6",
+      "fundId": "161128",
+      "fundName": "标普信息科技LOF",
+      "discountRate": "4.43",
+      "applyStatus": "限10",
+      "monitorTime": "2026-01-15 16:18:45",
+      "createdAt": "2026-01-15 16:18:48"
+    },
+    {
+      "id": "7",
+      "fundId": "161130",
+      "fundName": "纳斯达克100LOF",
+      "discountRate": "2.31",
+      "applyStatus": "限10",
+      "monitorTime": "2026-01-15 16:18:45",
+      "createdAt": "2026-01-15 16:18:48"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfundId\tfundName\tdiscountRate\tapplyStatus\tmonitorTime\tcreatedAt\n30001\t161226\t国投白银LOF\t19.47\t限100\t2026-01-15 21:10:48\t2026-01-15 21:10:51\n30002\t161128\t标普信息科技LOF\t4.43\t限10\t2026-01-15 21:10:48\t2026-01-15 21:10:51\n30003\t161130\t纳斯达克100LOF\t2.31\t限10\t2026-01-15 21:10:48\t2026-01-15 21:10:51\n5\t161226\t国投白银LOF\t19.47\t限100\t2026-01-15 16:18:45\t2026-01-15 16:18:48\n6\t161128\t标普信息科技LOF\t4.43\t限10\t2026-01-15 16:18:45\t2026-01-15 16:18:48\n7\t161130\t纳斯达克100LOF\t2.31\t限10\t2026-01-15 16:18:45\t2026-01-15 16:18:48\n",
+  "stderr": "",
+  "execution_time_ms": 385
+}

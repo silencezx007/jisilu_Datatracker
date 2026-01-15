@@ -40,7 +40,7 @@ export const appRouter = router({
     // 手动触发监控（仅管理员）
     triggerMonitoring: protectedProcedure
       .input(z.object({
-        discountThreshold: z.number().optional().default(2.0),
+        discountThreshold: z.number().optional().default(0),
       }))
       .mutation(async ({ input, ctx }) => {
         if (ctx.user.role !== 'admin') {
