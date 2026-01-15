@@ -11,7 +11,7 @@ export interface JisiluLofData {
   apply_status: string;
   fund_nav: string;
   estimate_value: string;
-  stock_ratio: string;
+  stock_ratio?: string;
   issuer_nm: string;
 }
 
@@ -39,23 +39,49 @@ export interface FilteredLofData {
 }
 
 /**
- * 从集思录 API 获取 LOF 基金数据
+ * 从集思录 API 获取单个类型的 LOF 基金数据
  */
-export async function fetchLofData(): Promise<JisiluApiResponse> {
-  const url = 'https://www.jisilu.cn/data/lof/stock_lof_list/';
-  
+async function fetchLofDataByType(url: string, type: string): Promise<JisiluApiResponse> {
   const headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Referer': 'https://www.jisilu.cn/data/lof/'
+    'Referer': 'https://www.jisilu.cn/data/lof/',
+    'Content-Type': 'application/x-www-form-urlencoded',
   };
   
   try {
-    const response = await axios.get<JisiluApiResponse>(url, {
+    const response = await axios.post<JisiluApiResponse>(url, {}, {
       headers,
       timeout: 10000
     });
     
+    console.log(`[JisiluService] Fetched ${response.data.rows?.length || 0} ${type} LOF funds`);
     return response.data;
+  } catch (error) {
+    console.error(`[JisiluService] Failed to fetch ${type} LOF data:`, error);
+    throw new Error(`Failed to fetch ${type} LOF data from Jisilu`);
+  }
+}
+
+/**
+ * 从集思录 API 获取所有 LOF 基金数据（股票LOF + 指数LOF）
+ */
+export async function fetchLofData(): Promise<JisiluApiResponse> {
+  try {
+    // 同时获取股票LOF和指数LOF数据
+    const [stockData, indexData] = await Promise.all([
+      fetchLofDataByType('https://www.jisilu.cn/data/lof/stock_lof_list/', '股票'),
+      fetchLofDataByType('https://www.jisilu.cn/data/lof/index_lof_list/', '指数'),
+    ]);
+    
+    // 合并两个数据源
+    const allRows = [...stockData.rows, ...indexData.rows];
+    
+    console.log(`[JisiluService] Total fetched ${allRows.length} LOF funds (股票: ${stockData.rows.length}, 指数: ${indexData.rows.length})`);
+    
+    return {
+      page: 1,
+      rows: allRows,
+    };
   } catch (error) {
     console.error('[JisiluService] Failed to fetch LOF data:', error);
     throw new Error('Failed to fetch LOF data from Jisilu');
@@ -64,7 +90,7 @@ export async function fetchLofData(): Promise<JisiluApiResponse> {
 
 /**
  * 筛选符合条件的 LOF 基金
- * 条件：溢价率 > 2% 且申购状态包含'限'字
+ * 条件：溢价率 > discountThreshold% 且申购状态包含'限'字
  */
 export function filterLofData(
   data: JisiluApiResponse,
@@ -117,10 +143,10 @@ export async function monitorLofOpportunities(
   console.log('[JisiluService] Starting LOF monitoring...');
   
   const data = await fetchLofData();
-  console.log(`[JisiluService] Fetched ${data.rows.length} LOF funds`);
+  console.log(`[JisiluService] Fetched ${data.rows.length} total LOF funds`);
   
   const filtered = filterLofData(data, discountThreshold);
-  console.log(`[JisiluService] Found ${filtered.length} opportunities`);
+  console.log(`[JisiluService] Found ${filtered.length} opportunities (溢价率 > ${discountThreshold}% 且限购)`);
   
   return filtered;
 }
