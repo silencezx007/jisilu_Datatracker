@@ -63,20 +63,55 @@ async function fetchLofDataByType(url: string, type: string): Promise<JisiluApiR
 }
 
 /**
- * 从集思录 API 获取所有 LOF 基金数据（股票LOF + 指数LOF）
+ * 从 QDII API 获取 LOF 基金数据（过滤出LOF类型）
+ */
+async function fetchQdiiLofData(): Promise<JisiluApiResponse> {
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Referer': 'https://www.jisilu.cn/data/qdii/',
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+  
+  try {
+    const response = await axios.post<JisiluApiResponse>('https://www.jisilu.cn/data/qdii/qdii_list/', {}, {
+      headers,
+      timeout: 10000
+    });
+    
+    // 过滤出 LOF 类型的基金（fund_nm 包含 "LOF"）
+    const lofRows = response.data.rows.filter(row => {
+      const fundName = row.cell.fund_nm || '';
+      return fundName.includes('LOF');
+    });
+    
+    console.log(`[JisiluService] Fetched ${lofRows.length} QDII LOF funds (from ${response.data.rows.length} total QDII)`);
+    
+    return {
+      page: response.data.page,
+      rows: lofRows,
+    };
+  } catch (error) {
+    console.error(`[JisiluService] Failed to fetch QDII LOF data:`, error);
+    throw new Error('Failed to fetch QDII LOF data from Jisilu');
+  }
+}
+
+/**
+ * 从集思录 API 获取所有 LOF 基金数据（股票LOF + 指数LOF + QDII LOF）
  */
 export async function fetchLofData(): Promise<JisiluApiResponse> {
   try {
-    // 同时获取股票LOF和指数LOF数据
-    const [stockData, indexData] = await Promise.all([
+    // 同时获取三个数据源
+    const [stockData, indexData, qdiiData] = await Promise.all([
       fetchLofDataByType('https://www.jisilu.cn/data/lof/stock_lof_list/', '股票'),
       fetchLofDataByType('https://www.jisilu.cn/data/lof/index_lof_list/', '指数'),
+      fetchQdiiLofData(),
     ]);
     
-    // 合并两个数据源
-    const allRows = [...stockData.rows, ...indexData.rows];
+    // 合并三个数据源
+    const allRows = [...stockData.rows, ...indexData.rows, ...qdiiData.rows];
     
-    console.log(`[JisiluService] Total fetched ${allRows.length} LOF funds (股票: ${stockData.rows.length}, 指数: ${indexData.rows.length})`);
+    console.log(`[JisiluService] Total fetched ${allRows.length} LOF funds (股票: ${stockData.rows.length}, 指数: ${indexData.rows.length}, QDII: ${qdiiData.rows.length})`);
     
     return {
       page: 1,
