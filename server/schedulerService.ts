@@ -23,13 +23,13 @@ class SchedulerService {
         this.scheduleMonitoring(config.cronExpression, parseFloat(config.discountThreshold));
       } else {
         console.log('[Scheduler] No active config found, using default schedule');
-        // 默认配置：每日 14:45
-        this.scheduleMonitoring('45 14 * * *', 2.0);
+        // 默认配置：每日 14:45，抓取所有溢价率 > 0% 且限购的基金
+        this.scheduleMonitoring('45 14 * * *', 0);
       }
     } catch (error) {
       console.error('[Scheduler] Failed to initialize:', error);
       // 使用默认配置作为后备
-      this.scheduleMonitoring('45 14 * * *', 2.0);
+      this.scheduleMonitoring('45 14 * * *', 0);
     }
   }
   
@@ -161,7 +161,7 @@ class SchedulerService {
   /**
    * 手动触发监控（用于测试）
    */
-  async triggerManually(discountThreshold: number = 2.0) {
+  async triggerManually(discountThreshold: number = 0) {
     console.log('[Scheduler] Manual trigger requested');
     await this.executeMonitoring(discountThreshold);
   }

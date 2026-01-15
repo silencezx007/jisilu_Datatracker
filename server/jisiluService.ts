@@ -139,7 +139,7 @@ export async function fetchLofData(): Promise<JisiluApiResponse> {
  */
 export function filterLofData(
   data: JisiluApiResponse,
-  discountThreshold: number = 2.0
+  discountThreshold: number = 0
 ): FilteredLofData[] {
   const filtered: FilteredLofData[] = [];
   
@@ -183,7 +183,7 @@ export function filterLofData(
  * 执行完整的监控流程：获取数据并筛选
  */
 export async function monitorLofOpportunities(
-  discountThreshold: number = 2.0
+  discountThreshold: number = 0
 ): Promise<FilteredLofData[]> {
   console.log('[JisiluService] Starting LOF monitoring...');
   
