@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,51 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RefreshCw, TrendingUp, AlertCircle, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, TrendingUp, AlertCircle, Filter, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 
+type SortField = 'discountRate' | 'price' | 'fundNav';
+type SortDirection = 'asc' | 'desc';
+
+interface UserPreferences {
+  threshold: number;
+  sortField: SortField;
+  sortDirection: SortDirection;
+}
+
+const STORAGE_KEY = 'lof_hunter_preferences';
+
+// 从 localStorage 加载偏好
+function loadPreferences(): UserPreferences {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Failed to load preferences:', error);
+  }
+  
+  // 默认偏好
+  return {
+    threshold: 2.0,
+    sortField: 'discountRate',
+    sortDirection: 'desc',
+  };
+}
+
+// 保存偏好到 localStorage
+function savePreferences(preferences: UserPreferences) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+  } catch (error) {
+    console.error('Failed to save preferences:', error);
+  }
+}
+
 export default function LofList() {
-  const [customThreshold, setCustomThreshold] = useState(2.0);
+  const [preferences, setPreferences] = useState<UserPreferences>(loadPreferences);
   const { data: records, isLoading, refetch } = trpc.lof.getLatest.useQuery({ limit: 200 });
   const triggerMonitoring = trpc.lof.triggerMonitoring.useMutation({
     onSuccess: () => {
@@ -24,16 +64,54 @@ export default function LofList() {
     },
   });
 
-  // 前端实时筛选：根据自定义阈值过滤数据
-  const filteredRecords = useMemo(() => {
+  // 保存偏好到 localStorage（当偏好变化时）
+  useEffect(() => {
+    savePreferences(preferences);
+  }, [preferences]);
+
+  // 前端实时筛选和排序
+  const filteredAndSortedRecords = useMemo(() => {
     if (!records) return [];
     
-    return records.filter(record => {
+    // 1. 筛选
+    const filtered = records.filter(record => {
       const discountRate = parseFloat(record.discountRate);
       const hasLimit = record.applyStatus.includes('限');
-      return discountRate > customThreshold && hasLimit;
+      return discountRate > preferences.threshold && hasLimit;
     });
-  }, [records, customThreshold]);
+    
+    // 2. 排序
+    const sorted = [...filtered].sort((a, b) => {
+      let aValue: number;
+      let bValue: number;
+      
+      switch (preferences.sortField) {
+        case 'discountRate':
+          aValue = parseFloat(a.discountRate);
+          bValue = parseFloat(b.discountRate);
+          break;
+        case 'price':
+          aValue = a.price ? parseFloat(a.price) : 0;
+          bValue = b.price ? parseFloat(b.price) : 0;
+          break;
+        case 'fundNav':
+          aValue = a.fundNav ? parseFloat(a.fundNav) : 0;
+          bValue = b.fundNav ? parseFloat(b.fundNav) : 0;
+          break;
+        default:
+          aValue = parseFloat(a.discountRate);
+          bValue = parseFloat(b.discountRate);
+      }
+      
+      if (preferences.sortDirection === 'asc') {
+        return aValue - bValue;
+      } else {
+        return bValue - aValue;
+      }
+    });
+    
+    return sorted;
+  }, [records, preferences]);
 
   const handleRefresh = () => {
     refetch();
@@ -45,11 +123,22 @@ export default function LofList() {
   };
 
   const handleThresholdChange = (value: number[]) => {
-    setCustomThreshold(value[0]);
+    setPreferences(prev => ({ ...prev, threshold: value[0] }));
   };
 
   const setQuickThreshold = (value: number) => {
-    setCustomThreshold(value);
+    setPreferences(prev => ({ ...prev, threshold: value }));
+  };
+
+  const handleSortFieldChange = (value: SortField) => {
+    setPreferences(prev => ({ ...prev, sortField: value }));
+  };
+
+  const toggleSortDirection = () => {
+    setPreferences(prev => ({
+      ...prev,
+      sortDirection: prev.sortDirection === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
   if (isLoading) {
@@ -62,6 +151,14 @@ export default function LofList() {
       </div>
     );
   }
+
+  const getSortFieldLabel = (field: SortField) => {
+    switch (field) {
+      case 'discountRate': return '溢价率';
+      case 'price': return '现价';
+      case 'fundNav': return '净值';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,18 +195,19 @@ export default function LofList() {
 
       {/* Content */}
       <main className="container py-6">
-        {/* 筛选控件 */}
+        {/* 筛选和排序控件 */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Filter className="w-5 h-5 text-primary" />
-              自定义筛选条件
+              筛选和排序
             </CardTitle>
             <CardDescription>
-              调整溢价率阈值，实时查看不同条件下的套利机会
+              调整溢价率阈值和排序方式，设置会自动保存
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {/* 溢价率筛选 */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label htmlFor="threshold-slider" className="text-sm font-medium">
@@ -121,8 +219,11 @@ export default function LofList() {
                     step="0.1"
                     min="0"
                     max="10"
-                    value={customThreshold}
-                    onChange={(e) => setCustomThreshold(parseFloat(e.target.value) || 0)}
+                    value={preferences.threshold}
+                    onChange={(e) => setPreferences(prev => ({ 
+                      ...prev, 
+                      threshold: parseFloat(e.target.value) || 0 
+                    }))}
                     className="w-20 h-8 text-sm"
                   />
                   <span className="text-sm text-muted-foreground">%</span>
@@ -134,42 +235,42 @@ export default function LofList() {
                 min={0}
                 max={10}
                 step={0.1}
-                value={[customThreshold]}
+                value={[preferences.threshold]}
                 onValueChange={handleThresholdChange}
                 className="w-full"
               />
               
               <div className="flex gap-2 flex-wrap">
                 <Button
-                  variant={customThreshold === 1.0 ? "default" : "outline"}
+                  variant={preferences.threshold === 1.0 ? "default" : "outline"}
                   size="sm"
                   onClick={() => setQuickThreshold(1.0)}
                 >
                   1.0%
                 </Button>
                 <Button
-                  variant={customThreshold === 1.5 ? "default" : "outline"}
+                  variant={preferences.threshold === 1.5 ? "default" : "outline"}
                   size="sm"
                   onClick={() => setQuickThreshold(1.5)}
                 >
                   1.5%
                 </Button>
                 <Button
-                  variant={customThreshold === 2.0 ? "default" : "outline"}
+                  variant={preferences.threshold === 2.0 ? "default" : "outline"}
                   size="sm"
                   onClick={() => setQuickThreshold(2.0)}
                 >
                   2.0%
                 </Button>
                 <Button
-                  variant={customThreshold === 3.0 ? "default" : "outline"}
+                  variant={preferences.threshold === 3.0 ? "default" : "outline"}
                   size="sm"
                   onClick={() => setQuickThreshold(3.0)}
                 >
                   3.0%
                 </Button>
                 <Button
-                  variant={customThreshold === 5.0 ? "default" : "outline"}
+                  variant={preferences.threshold === 5.0 ? "default" : "outline"}
                   size="sm"
                   onClick={() => setQuickThreshold(5.0)}
                 >
@@ -178,13 +279,58 @@ export default function LofList() {
               </div>
             </div>
 
+            {/* 排序选项 */}
+            <div className="pt-3 border-t border-border">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
+                  <Label className="text-sm font-medium">排序方式</Label>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Select value={preferences.sortField} onValueChange={handleSortFieldChange}>
+                    <SelectTrigger className="w-32 h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="discountRate">溢价率</SelectItem>
+                      <SelectItem value="price">现价</SelectItem>
+                      <SelectItem value="fundNav">净值</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleSortDirection}
+                    className="h-9"
+                  >
+                    {preferences.sortDirection === 'desc' ? (
+                      <>
+                        <ArrowDown className="w-4 h-4 mr-1" />
+                        降序
+                      </>
+                    ) : (
+                      <>
+                        <ArrowUp className="w-4 h-4 mr-1" />
+                        升序
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* 当前状态 */}
             <div className="pt-3 border-t border-border">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  当前筛选条件：溢价率 &gt; {customThreshold.toFixed(1)}% 且限购
+                  筛选条件：溢价率 &gt; {preferences.threshold.toFixed(1)}% 且限购 | 
+                  排序：{getSortFieldLabel(preferences.sortField)}
+                  {preferences.sortDirection === 'desc' ? '（高到低）' : '（低到高）'}
                 </span>
                 <Badge variant="secondary" className="text-sm">
-                  {filteredRecords.length} 个机会
+                  {filteredAndSortedRecords.length} 个机会
                 </Badge>
               </div>
             </div>
@@ -192,13 +338,13 @@ export default function LofList() {
         </Card>
 
         {/* 基金列表 */}
-        {filteredRecords.length === 0 ? (
+        {filteredAndSortedRecords.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-lg text-muted-foreground mb-2">暂无套利机会</p>
               <p className="text-sm text-muted-foreground">
-                当前没有符合条件的 LOF 基金（溢价率 &gt; {customThreshold.toFixed(1)}% 且限购）
+                当前没有符合条件的 LOF 基金（溢价率 &gt; {preferences.threshold.toFixed(1)}% 且限购）
               </p>
               <p className="text-xs text-muted-foreground mt-2">
                 尝试降低溢价率阈值查看更多机会
@@ -209,7 +355,7 @@ export default function LofList() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                找到 <span className="font-semibold text-foreground">{filteredRecords.length}</span> 个套利机会
+                找到 <span className="font-semibold text-foreground">{filteredAndSortedRecords.length}</span> 个套利机会
               </p>
               {records && records.length > 0 && (
                 <p className="text-xs text-muted-foreground">
@@ -219,7 +365,7 @@ export default function LofList() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredRecords.map((record) => (
+              {filteredAndSortedRecords.map((record) => (
                 <Card key={record.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
