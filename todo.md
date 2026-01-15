@@ -78,3 +78,9 @@
 - [x] 对比 AkShare 和集思录 API 的数据差异（发现 101 个新 LOF）
 - [x] 找出符合筛选条件（溢价率 > 0% 且限购）的新 LOF（找到 3 个）
 - [x] 决定：只使用集思录 API 数据，不集成其他数据源
+
+## Bug 修复 - 部署错误（已完成）
+- [x] 诊断 ERR_MODULE_NOT_FOUND: Cannot find package '@shared/const' 错误
+- [x] 检查 @shared/const 模块是否存在
+- [x] 修复导入路径问题（恢复 tsconfig.json 文件）
+- [x] 测试部署是否成功（构建通过）
