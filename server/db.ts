@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, lofRecords, InsertLofRecord, monitorConfigs, InsertMonitorConfig, pushHistories, InsertPushHistory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,110 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// LOF Records 相关查询
+
+export async function insertLofRecords(records: InsertLofRecord[]) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  if (records.length === 0) {
+    return;
+  }
+  
+  await db.insert(lofRecords).values(records);
+}
+
+export async function getLofRecordsByDate(startDate: Date, endDate: Date) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  return await db.select()
+    .from(lofRecords)
+    .where(eq(lofRecords.monitorTime, startDate))
+    .orderBy(desc(lofRecords.discountRate));
+}
+
+export async function getLatestLofRecords(limit: number = 50) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  return await db.select()
+    .from(lofRecords)
+    .orderBy(desc(lofRecords.monitorTime), desc(lofRecords.discountRate))
+    .limit(limit);
+}
+
+// Monitor Configs 相关查询
+
+export async function getActiveMonitorConfig() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  const result = await db.select()
+    .from(monitorConfigs)
+    .where(eq(monitorConfigs.enabled, true))
+    .limit(1);
+  
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getAllMonitorConfigs() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  return await db.select().from(monitorConfigs).orderBy(desc(monitorConfigs.createdAt));
+}
+
+export async function createMonitorConfig(config: InsertMonitorConfig) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  const result = await db.insert(monitorConfigs).values(config);
+  return result;
+}
+
+export async function updateMonitorConfig(id: number, updates: Partial<InsertMonitorConfig>) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  await db.update(monitorConfigs)
+    .set(updates)
+    .where(eq(monitorConfigs.id, id));
+}
+
+// Push Histories 相关查询
+
+export async function insertPushHistory(history: InsertPushHistory) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  await db.insert(pushHistories).values(history);
+}
+
+export async function getPushHistories(limit: number = 50) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  return await db.select()
+    .from(pushHistories)
+    .orderBy(desc(pushHistories.pushTime))
+    .limit(limit);
+}

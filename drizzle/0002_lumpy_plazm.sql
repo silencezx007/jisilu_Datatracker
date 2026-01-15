@@ -1,0 +1,1 @@
+ALTER TABLE `monitor_configs` MODIFY COLUMN `cronExpression` varchar(255) NOT NULL DEFAULT '45 14 * * *';
