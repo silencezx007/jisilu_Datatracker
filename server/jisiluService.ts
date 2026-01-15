@@ -111,11 +111,21 @@ export async function fetchLofData(): Promise<JisiluApiResponse> {
     // 合并三个数据源
     const allRows = [...stockData.rows, ...indexData.rows, ...qdiiData.rows];
     
-    console.log(`[JisiluService] Total fetched ${allRows.length} LOF funds (股票: ${stockData.rows.length}, 指数: ${indexData.rows.length}, QDII: ${qdiiData.rows.length})`);
+    // 去重：按 fund_id 去重，保留第一个出现的记录
+    const uniqueRows = allRows.filter((row, index, self) => 
+      index === self.findIndex(r => r.cell.fund_id === row.cell.fund_id)
+    );
+    
+    const duplicateCount = allRows.length - uniqueRows.length;
+    if (duplicateCount > 0) {
+      console.log(`[JisiluService] Removed ${duplicateCount} duplicate fund(s)`);
+    }
+    
+    console.log(`[JisiluService] Total fetched ${uniqueRows.length} unique LOF funds (股票: ${stockData.rows.length}, 指数: ${indexData.rows.length}, QDII: ${qdiiData.rows.length})`);
     
     return {
       page: 1,
-      rows: allRows,
+      rows: uniqueRows,
     };
   } catch (error) {
     console.error('[JisiluService] Failed to fetch LOF data:', error);

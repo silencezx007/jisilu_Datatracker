@@ -1,0 +1,26 @@
+{
+  "query": "SELECT id, fundId, fundName, discountRate, applyStatus, monitorTime FROM lof_records WHERE fundId = '161226' ORDER BY monitorTime DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4QdSMYJJQSMZtBS.root --database 6z9k2KcqEe2BCibDAZefPz --execute SELECT id, fundId, fundName, discountRate, applyStatus, monitorTime FROM lof_records WHERE fundId = '161226' ORDER BY monitorTime DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "2",
+      "fundId": "161226",
+      "fundName": "国投白银LOF",
+      "discountRate": "19.47",
+      "applyStatus": "限100",
+      "monitorTime": "2026-01-15 16:07:58"
+    },
+    {
+      "id": "1",
+      "fundId": "161226",
+      "fundName": "国投白银LOF",
+      "discountRate": "19.47",
+      "applyStatus": "限100",
+      "monitorTime": "2026-01-15 15:57:36"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfundId\tfundName\tdiscountRate\tapplyStatus\tmonitorTime\n2\t161226\t国投白银LOF\t19.47\t限100\t2026-01-15 16:07:58\n1\t161226\t国投白银LOF\t19.47\t限100\t2026-01-15 15:57:36\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}
