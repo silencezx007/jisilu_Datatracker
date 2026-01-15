@@ -122,10 +122,29 @@ export async function getLatestLofRecords(limit: number = 50) {
     throw new Error("Database not available");
   }
   
-  return await db.select()
+  // 获取最近一次监控的时间
+  const latestMonitorTime = await db.select({ monitorTime: lofRecords.monitorTime })
     .from(lofRecords)
-    .orderBy(desc(lofRecords.monitorTime), desc(lofRecords.discountRate))
+    .orderBy(desc(lofRecords.monitorTime))
+    .limit(1);
+  
+  if (latestMonitorTime.length === 0) {
+    return [];
+  }
+  
+  // 只返回最近一次监控的数据，并按溢价率降序排列
+  const records = await db.select()
+    .from(lofRecords)
+    .where(eq(lofRecords.monitorTime, latestMonitorTime[0].monitorTime))
+    .orderBy(desc(lofRecords.discountRate))
     .limit(limit);
+  
+  // 前端额外保险：按 fund_id 去重
+  const uniqueRecords = records.filter((record, index, self) => 
+    index === self.findIndex(r => r.fundId === record.fundId)
+  );
+  
+  return uniqueRecords;
 }
 
 // Monitor Configs 相关查询
