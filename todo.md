@@ -109,3 +109,10 @@
 - [x] 检查数据抓取逻辑的去重实现（数据抓取逻辑正常）
 - [x] 修复去重逻辑（修改 getLatestLofRecords 函数，只返回最近一次监控的数据并按 fund_id 去重）
 - [x] 测试验证修复效果（从 14 个重复项减少到 7 个唯一基金）
+
+## Bug 修复 - 登录时 Cloudflare DNS 错误（Error 1016）
+- [x] 诊断 DNS 错误原因（原因：部署环境未配置 DATABASE_URL）
+- [x] 检查数据库连接配置（Manus 平台使用 TiDB Cloud）
+- [x] 检查环境变量中的 DATABASE_URL（已确认配置正确）
+- [x] 创建部署指南文档（DEPLOYMENT.md）
+- [x] 提供多种数据库选项和配置说明
