@@ -74,14 +74,19 @@ export default function LofList() {
   const filteredAndSortedRecords = useMemo(() => {
     if (!records) return [];
     
-    // 1. 筛选
-    const filtered = records.filter(record => {
+    // 1. 先按 fundId 去重，保留第一条（通常是最新的）
+    const uniqueRecords = records.filter((record, index, self) =>
+      index === self.findIndex(r => r.fundId === record.fundId)
+    );
+    
+    // 2. 筛选
+    const filtered = uniqueRecords.filter(record => {
       const discountRate = parseFloat(record.discountRate);
       const hasLimit = record.applyStatus.includes('限');
       return discountRate > preferences.threshold && hasLimit;
     });
     
-    // 2. 排序
+    // 3. 排序
     const sorted = [...filtered].sort((a, b) => {
       let aValue: number;
       let bValue: number;
@@ -375,55 +380,57 @@ export default function LofList() {
               )}
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredAndSortedRecords.map((record) => (
-                <Card key={record.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{record.fundName}</CardTitle>
-                        <CardDescription className="mt-1">{record.fundId}</CardDescription>
-                      </div>
-                      <Badge 
-                        variant="default" 
-                        className="ml-2 bg-success text-success-foreground"
-                      >
-                        +{parseFloat(record.discountRate).toFixed(2)}%
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">现价</p>
-                        <p className="font-semibold text-foreground">
-                          {record.price ? parseFloat(record.price).toFixed(4) : '-'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">净值</p>
-                        <p className="font-semibold text-foreground">
-                          {record.fundNav ? parseFloat(record.fundNav).toFixed(4) : '-'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="pt-2 border-t border-border">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">申购状态</span>
-                        <Badge variant="outline" className="text-xs">
-                          {record.applyStatus}
-                        </Badge>
-                      </div>
-                    </div>
+            {/* 列表表头 */}
+            <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-3 py-2 bg-muted/50 rounded-lg text-xs font-medium text-muted-foreground">
+              <div className="col-span-4">基金名称</div>
+              <div className="col-span-2 text-right">溢价率</div>
+              <div className="col-span-2 text-right">现价</div>
+              <div className="col-span-2 text-right">净值</div>
+              <div className="col-span-2 text-center">申购状态</div>
+            </div>
 
-                    {record.issuerName && (
-                      <div className="text-xs text-muted-foreground">
-                        {record.issuerName}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+            {/* 基金列表 */}
+            <div className="space-y-1">
+              {filteredAndSortedRecords.map((record) => (
+                <div 
+                  key={record.id} 
+                  className="grid grid-cols-1 sm:grid-cols-12 gap-2 px-3 py-2 bg-card border border-border rounded-lg hover:bg-accent/50 transition-colors items-center"
+                >
+                  {/* 基金名称和代码 */}
+                  <div className="sm:col-span-4">
+                    <div className="font-medium text-sm text-foreground truncate">{record.fundName}</div>
+                    <div className="text-xs text-muted-foreground">{record.fundId}</div>
+                  </div>
+                  
+                  {/* 溢价率 */}
+                  <div className="sm:col-span-2 flex sm:justify-end">
+                    <Badge 
+                      variant="default" 
+                      className="bg-success text-success-foreground text-xs"
+                    >
+                      +{parseFloat(record.discountRate).toFixed(2)}%
+                    </Badge>
+                  </div>
+                  
+                  {/* 现价 */}
+                  <div className="sm:col-span-2 text-sm sm:text-right">
+                    <span className="sm:hidden text-xs text-muted-foreground mr-1">现价:</span>
+                    <span className="font-medium">{record.price ? parseFloat(record.price).toFixed(4) : '-'}</span>
+                  </div>
+                  
+                  {/* 净值 */}
+                  <div className="sm:col-span-2 text-sm sm:text-right">
+                    <span className="sm:hidden text-xs text-muted-foreground mr-1">净值:</span>
+                    <span className="font-medium">{record.fundNav ? parseFloat(record.fundNav).toFixed(4) : '-'}</span>
+                  </div>
+                  
+                  {/* 申购状态 */}
+                  <div className="sm:col-span-2 flex sm:justify-center">
+                    <Badge variant="outline" className="text-xs">
+                      {record.applyStatus}
+                    </Badge>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

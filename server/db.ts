@@ -96,11 +96,11 @@ export async function insertLofRecords(records: InsertLofRecord[]) {
   if (!db) {
     throw new Error("Database not available");
   }
-  
+
   if (records.length === 0) {
     return;
   }
-  
+
   await db.insert(lofRecords).values(records);
 }
 
@@ -109,7 +109,7 @@ export async function getLofRecordsByDate(startDate: Date, endDate: Date) {
   if (!db) {
     throw new Error("Database not available");
   }
-  
+
   return await db.select()
     .from(lofRecords)
     .where(eq(lofRecords.monitorTime, startDate))
@@ -118,32 +118,54 @@ export async function getLofRecordsByDate(startDate: Date, endDate: Date) {
 
 export async function getLatestLofRecords(limit: number = 50) {
   const db = await getDb();
+
+  // 如果数据库不可用，直接从集思录 API 获取实时数据
   if (!db) {
-    throw new Error("Database not available");
+    console.log("[Database] Database not available, fetching live data from Jisilu API...");
+    const { fetchLofData, filterLofData } = await import("./jisiluService");
+    const rawData = await fetchLofData();
+    const filtered = filterLofData(rawData, 0); // 获取所有数据，前端会做筛选
+
+    // 转换为与数据库记录相同的格式
+    const now = new Date();
+    return filtered.slice(0, limit).map((item, index) => ({
+      id: index + 1,
+      fundId: item.fundId,
+      fundName: item.fundName,
+      price: item.price?.toString() || null,
+      discountRate: item.discountRate.toString(),
+      applyStatus: item.applyStatus,
+      fundNav: item.fundNav?.toString() || null,
+      estimateValue: item.estimateValue?.toString() || null,
+      stockRatio: item.stockRatio?.toString() || null,
+      issuerName: item.issuerName,
+      monitorTime: now,
+      createdAt: now,
+    }));
   }
-  
+
   // 获取最近一次监控的时间
   const latestMonitorTime = await db.select({ monitorTime: lofRecords.monitorTime })
     .from(lofRecords)
     .orderBy(desc(lofRecords.monitorTime))
     .limit(1);
-  
+
   if (latestMonitorTime.length === 0) {
     return [];
   }
-  
+
   // 只返回最近一次监控的数据，并按溢价率降序排列
   const records = await db.select()
     .from(lofRecords)
     .where(eq(lofRecords.monitorTime, latestMonitorTime[0].monitorTime))
     .orderBy(desc(lofRecords.discountRate))
     .limit(limit);
-  
+
   // 前端额外保险：按 fund_id 去重
-  const uniqueRecords = records.filter((record, index, self) => 
+  const uniqueRecords = records.filter((record, index, self) =>
     index === self.findIndex(r => r.fundId === record.fundId)
   );
-  
+
   return uniqueRecords;
 }
 
@@ -154,12 +176,12 @@ export async function getActiveMonitorConfig() {
   if (!db) {
     throw new Error("Database not available");
   }
-  
+
   const result = await db.select()
     .from(monitorConfigs)
     .where(eq(monitorConfigs.enabled, true))
     .limit(1);
-  
+
   return result.length > 0 ? result[0] : null;
 }
 
@@ -168,7 +190,7 @@ export async function getAllMonitorConfigs() {
   if (!db) {
     throw new Error("Database not available");
   }
-  
+
   return await db.select().from(monitorConfigs).orderBy(desc(monitorConfigs.createdAt));
 }
 
@@ -177,7 +199,7 @@ export async function createMonitorConfig(config: InsertMonitorConfig) {
   if (!db) {
     throw new Error("Database not available");
   }
-  
+
   const result = await db.insert(monitorConfigs).values(config);
   return result;
 }
@@ -187,7 +209,7 @@ export async function updateMonitorConfig(id: number, updates: Partial<InsertMon
   if (!db) {
     throw new Error("Database not available");
   }
-  
+
   await db.update(monitorConfigs)
     .set(updates)
     .where(eq(monitorConfigs.id, id));
@@ -200,7 +222,7 @@ export async function insertPushHistory(history: InsertPushHistory) {
   if (!db) {
     throw new Error("Database not available");
   }
-  
+
   await db.insert(pushHistories).values(history);
 }
 
@@ -209,7 +231,7 @@ export async function getPushHistories(limit: number = 50) {
   if (!db) {
     throw new Error("Database not available");
   }
-  
+
   return await db.select()
     .from(pushHistories)
     .orderBy(desc(pushHistories.pushTime))
